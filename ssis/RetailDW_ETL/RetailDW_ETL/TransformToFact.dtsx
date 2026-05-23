@@ -1,0 +1,263 @@
+﻿<?xml version="1.0"?>
+<DTS:Executable xmlns:DTS="www.microsoft.com/SqlServer/Dts"
+  DTS:refId="Package"
+  DTS:CreationDate="5/23/2026 9:14:51 PM"
+  DTS:CreationName="Microsoft.Package"
+  DTS:CreatorComputerName="WAS"
+  DTS:CreatorName="WAS\reisz"
+  DTS:DTSID="{2C7FB070-C2E2-4740-BC36-794D0FBCA6E2}"
+  DTS:ExecutableType="Microsoft.Package"
+  DTS:LastModifiedProductVersion="17.0.1016.0"
+  DTS:LocaleID="1033"
+  DTS:ObjectName="Package1"
+  DTS:PackageType="5"
+  DTS:VersionBuild="2"
+  DTS:VersionGUID="{4A3CF3DF-0AB0-43CC-B4F9-72AB55A6F11B}">
+  <DTS:Property
+    DTS:Name="PackageFormatVersion">8</DTS:Property>
+  <DTS:ConnectionManagers>
+    <DTS:ConnectionManager
+      DTS:refId="Package.ConnectionManagers[(localdb)\MSSQLLocalDB.RetailDW]"
+      DTS:CreationName="OLEDB"
+      DTS:DTSID="{6685B58C-3499-4703-8C90-1CFDCC18E3B7}"
+      DTS:ObjectName="(localdb)\MSSQLLocalDB.RetailDW">
+      <DTS:ObjectData>
+        <DTS:ConnectionManager
+          DTS:ConnectRetryCount="1"
+          DTS:ConnectRetryInterval="5"
+          DTS:ConnectionString="Data Source=(localdb)\MSSQLLocalDB;Initial Catalog=RetailDW;Provider=MSOLEDBSQL.1;Integrated Security=SSPI;Application Name=SSIS-Package1-{6685B58C-3499-4703-8C90-1CFDCC18E3B7}(localdb)\MSSQLLocalDB.RetailDW;Auto Translate=False;" />
+      </DTS:ObjectData>
+    </DTS:ConnectionManager>
+  </DTS:ConnectionManagers>
+  <DTS:Variables />
+  <DTS:Executables>
+    <DTS:Executable
+      DTS:refId="Package\Clear Staging"
+      DTS:CreationName="Microsoft.ExecuteSQLTask"
+      DTS:Description="Execute SQL Task"
+      DTS:DTSID="{9418D22C-278F-46BE-BB96-DECFEB27768D}"
+      DTS:ExecutableType="Microsoft.ExecuteSQLTask"
+      DTS:LocaleID="-1"
+      DTS:ObjectName="Clear Staging"
+      DTS:TaskContact="Execute SQL Task; Microsoft Corporation; SQL Server 2025; © 2025 Microsoft Corporation; All Rights Reserved;http://www.microsoft.com/sql/support/default.asp;1"
+      DTS:ThreadHint="0">
+      <DTS:Variables />
+      <DTS:ObjectData>
+        <SQLTask:SqlTaskData
+          SQLTask:Connection="{6685B58C-3499-4703-8C90-1CFDCC18E3B7}"
+          SQLTask:SqlStatementSource="TRUNCATE TABLE staging_sales;" xmlns:SQLTask="www.microsoft.com/sqlserver/dts/tasks/sqltask" />
+      </DTS:ObjectData>
+    </DTS:Executable>
+    <DTS:Executable
+      DTS:refId="Package\Insert Categories"
+      DTS:CreationName="Microsoft.ExecuteSQLTask"
+      DTS:Description="Execute SQL Task"
+      DTS:DTSID="{11973937-897E-43E5-9AF4-965CD360C760}"
+      DTS:ExecutableType="Microsoft.ExecuteSQLTask"
+      DTS:LocaleID="-1"
+      DTS:ObjectName="Insert Categories"
+      DTS:TaskContact="Execute SQL Task; Microsoft Corporation; SQL Server 2025; © 2025 Microsoft Corporation; All Rights Reserved;http://www.microsoft.com/sql/support/default.asp;1"
+      DTS:ThreadHint="0">
+      <DTS:Variables />
+      <DTS:ObjectData>
+        <SQLTask:SqlTaskData
+          SQLTask:Connection="{6685B58C-3499-4703-8C90-1CFDCC18E3B7}"
+          SQLTask:SqlStatementSource="INSERT INTO dim_category (Category, SubCategory)&#xA;SELECT DISTINCT s.Category, s.SubCategory&#xA;FROM staging_sales s&#xA;WHERE NOT EXISTS (&#xA;    SELECT 1 FROM dim_category dc&#xA;    WHERE dc.Category = s.Category AND dc.SubCategory = s.SubCategory&#xA;);" xmlns:SQLTask="www.microsoft.com/sqlserver/dts/tasks/sqltask" />
+      </DTS:ObjectData>
+    </DTS:Executable>
+    <DTS:Executable
+      DTS:refId="Package\Insert Fact Sales"
+      DTS:CreationName="Microsoft.ExecuteSQLTask"
+      DTS:Description="Execute SQL Task"
+      DTS:DTSID="{F649CCC5-2F95-43D7-93C5-19859EC112C4}"
+      DTS:ExecutableType="Microsoft.ExecuteSQLTask"
+      DTS:LocaleID="-1"
+      DTS:ObjectName="Insert Fact Sales"
+      DTS:TaskContact="Execute SQL Task; Microsoft Corporation; SQL Server 2025; © 2025 Microsoft Corporation; All Rights Reserved;http://www.microsoft.com/sql/support/default.asp;1"
+      DTS:ThreadHint="0">
+      <DTS:Variables />
+      <DTS:ObjectData>
+        <SQLTask:SqlTaskData
+          SQLTask:Connection="{6685B58C-3499-4703-8C90-1CFDCC18E3B7}"
+          SQLTask:SqlStatementSource="INSERT INTO fact_sales (OrderID, DateKey, CategoryKey, CustomerID, Segment, City, [State], Region, Sales, Quantity, Discount, Profit, IsHoliday)&#xA;SELECT&#xA;    s.OrderID,&#xA;    CONVERT(INT, FORMAT(TRY_CAST(s.OrderDate AS DATE), 'yyyyMMdd')),&#xA;    dc.CategoryKey,&#xA;    s.CustomerID,&#xA;    s.Segment,&#xA;    s.City,&#xA;    s.[State],&#xA;    s.Region,&#xA;    s.Sales,&#xA;    s.Quantity,&#xA;    s.Discount,&#xA;    s.Profit,&#xA;    ISNULL(t.IsHoliday, 0)&#xA;FROM staging_sales s&#xA;INNER JOIN dim_category dc ON s.Category = dc.Category AND s.SubCategory = dc.SubCategory&#xA;LEFT JOIN dim_time t ON CONVERT(INT, FORMAT(TRY_CAST(s.OrderDate AS DATE), 'yyyyMMdd')) = t.DateKey&#xA;WHERE NOT EXISTS (&#xA;    SELECT 1 FROM fact_sales f&#xA;    WHERE f.OrderID = s.OrderID&#xA;      AND f.DateKey = CONVERT(INT, FORMAT(TRY_CAST(s.OrderDate AS DATE), 'yyyyMMdd'))&#xA;      AND f.Sales = s.Sales&#xA;      AND f.CustomerID = s.CustomerID&#xA;);" xmlns:SQLTask="www.microsoft.com/sqlserver/dts/tasks/sqltask" />
+      </DTS:ObjectData>
+    </DTS:Executable>
+    <DTS:Executable
+      DTS:refId="Package\Update Holiday Flags"
+      DTS:CreationName="Microsoft.ExecuteSQLTask"
+      DTS:Description="Execute SQL Task"
+      DTS:DTSID="{DA0AD05C-3B0C-430B-8FF2-51F474411ED3}"
+      DTS:ExecutableType="Microsoft.ExecuteSQLTask"
+      DTS:LocaleID="-1"
+      DTS:ObjectName="Update Holiday Flags"
+      DTS:TaskContact="Execute SQL Task; Microsoft Corporation; SQL Server 2025; © 2025 Microsoft Corporation; All Rights Reserved;http://www.microsoft.com/sql/support/default.asp;1"
+      DTS:ThreadHint="0">
+      <DTS:Variables />
+      <DTS:ObjectData>
+        <SQLTask:SqlTaskData
+          SQLTask:Connection="{6685B58C-3499-4703-8C90-1CFDCC18E3B7}"
+          SQLTask:SqlStatementSource="UPDATE t&#xA;SET t.IsHoliday = 1&#xA;FROM dim_time t&#xA;INNER JOIN dim_holiday h ON t.FullDate = h.HolidayDate&#xA;WHERE t.IsHoliday = 0;" xmlns:SQLTask="www.microsoft.com/sqlserver/dts/tasks/sqltask" />
+      </DTS:ObjectData>
+    </DTS:Executable>
+  </DTS:Executables>
+  <DTS:PrecedenceConstraints>
+    <DTS:PrecedenceConstraint
+      DTS:refId="Package.PrecedenceConstraints[Constraint]"
+      DTS:CreationName=""
+      DTS:DTSID="{D7AA26DD-06A4-40B0-B4EC-1D90838B5091}"
+      DTS:From="Package\Insert Categories"
+      DTS:LogicalAnd="True"
+      DTS:ObjectName="Constraint"
+      DTS:To="Package\Update Holiday Flags" />
+    <DTS:PrecedenceConstraint
+      DTS:refId="Package.PrecedenceConstraints[Constraint 1]"
+      DTS:CreationName=""
+      DTS:DTSID="{B6C48A61-72F7-4D81-8B23-B6953DFD8E07}"
+      DTS:From="Package\Update Holiday Flags"
+      DTS:LogicalAnd="True"
+      DTS:ObjectName="Constraint 1"
+      DTS:To="Package\Insert Fact Sales" />
+    <DTS:PrecedenceConstraint
+      DTS:refId="Package.PrecedenceConstraints[Constraint 2]"
+      DTS:CreationName=""
+      DTS:DTSID="{1D572D7A-296D-4B83-A84F-AD730DA1BD13}"
+      DTS:From="Package\Insert Fact Sales"
+      DTS:LogicalAnd="True"
+      DTS:ObjectName="Constraint 2"
+      DTS:To="Package\Clear Staging" />
+  </DTS:PrecedenceConstraints>
+  <DTS:DesignTimeProperties><![CDATA[<?xml version="1.0"?>
+<!--This CDATA section contains the layout information of the package. The section includes information such as (x,y) coordinates, width, and height.-->
+<!--If you manually edit this section and make a mistake, you can delete it. -->
+<!--The package will still be able to load normally but the previous layout information will be lost and the designer will automatically re-arrange the elements on the design surface.-->
+<Objects
+  Version="8">
+  <!--Each node below will contain properties that do not affect runtime behavior.-->
+  <Package
+    design-time-name="Package">
+    <LayoutInfo>
+      <GraphLayout
+        Capacity="8" xmlns="clr-namespace:Microsoft.SqlServer.IntegrationServices.Designer.Model.Serialization;assembly=Microsoft.SqlServer.IntegrationServices.Graph" xmlns:mssgle="clr-namespace:Microsoft.SqlServer.Graph.LayoutEngine;assembly=Microsoft.SqlServer.Graph" xmlns:assembly="http://schemas.microsoft.com/winfx/2006/xaml">
+        <NodeLayout
+          Size="170,42"
+          Id="Package\Insert Categories"
+          TopLeft="249,75" />
+        <NodeLayout
+          Size="184,42"
+          Id="Package\Update Holiday Flags"
+          TopLeft="196,169" />
+        <NodeLayout
+          Size="161,42"
+          Id="Package\Insert Fact Sales"
+          TopLeft="283,283" />
+        <NodeLayout
+          Size="146,42"
+          Id="Package\Clear Staging"
+          TopLeft="588,235" />
+        <EdgeLayout
+          Id="Package.PrecedenceConstraints[Constraint]"
+          TopLeft="334,117">
+          <EdgeLayout.Curve>
+            <mssgle:Curve
+              StartConnector="{assembly:Null}"
+              EndConnector="-46,52"
+              Start="0,0"
+              End="-46,44.5">
+              <mssgle:Curve.Segments>
+                <mssgle:SegmentCollection
+                  Capacity="5">
+                  <mssgle:LineSegment
+                    End="0,22" />
+                  <mssgle:CubicBezierSegment
+                    Point1="0,22"
+                    Point2="0,26"
+                    Point3="-4,26" />
+                  <mssgle:LineSegment
+                    End="-42,26" />
+                  <mssgle:CubicBezierSegment
+                    Point1="-42,26"
+                    Point2="-46,26"
+                    Point3="-46,30" />
+                  <mssgle:LineSegment
+                    End="-46,44.5" />
+                </mssgle:SegmentCollection>
+              </mssgle:Curve.Segments>
+            </mssgle:Curve>
+          </EdgeLayout.Curve>
+          <EdgeLayout.Labels>
+            <EdgeLabelCollection />
+          </EdgeLayout.Labels>
+        </EdgeLayout>
+        <EdgeLayout
+          Id="Package.PrecedenceConstraints[Constraint 1]"
+          TopLeft="288,211">
+          <EdgeLayout.Curve>
+            <mssgle:Curve
+              StartConnector="{assembly:Null}"
+              EndConnector="75.5,72"
+              Start="0,0"
+              End="75.5,64.5">
+              <mssgle:Curve.Segments>
+                <mssgle:SegmentCollection
+                  Capacity="5">
+                  <mssgle:LineSegment
+                    End="0,32" />
+                  <mssgle:CubicBezierSegment
+                    Point1="0,32"
+                    Point2="0,36"
+                    Point3="4,36" />
+                  <mssgle:LineSegment
+                    End="71.5,36" />
+                  <mssgle:CubicBezierSegment
+                    Point1="71.5,36"
+                    Point2="75.5,36"
+                    Point3="75.5,40" />
+                  <mssgle:LineSegment
+                    End="75.5,64.5" />
+                </mssgle:SegmentCollection>
+              </mssgle:Curve.Segments>
+            </mssgle:Curve>
+          </EdgeLayout.Curve>
+          <EdgeLayout.Labels>
+            <EdgeLabelCollection />
+          </EdgeLayout.Labels>
+        </EdgeLayout>
+        <EdgeLayout
+          Id="Package.PrecedenceConstraints[Constraint 2]"
+          TopLeft="444,304">
+          <EdgeLayout.Curve>
+            <mssgle:Curve
+              StartConnector="{assembly:Null}"
+              EndConnector="144,-48"
+              Start="0,0"
+              End="136.5,-48">
+              <mssgle:Curve.Segments>
+                <mssgle:SegmentCollection
+                  Capacity="5">
+                  <mssgle:LineSegment
+                    End="68,0" />
+                  <mssgle:CubicBezierSegment
+                    Point1="68,0"
+                    Point2="72,0"
+                    Point3="72,-4" />
+                  <mssgle:LineSegment
+                    End="72,-44" />
+                  <mssgle:CubicBezierSegment
+                    Point1="72,-44"
+                    Point2="72,-48"
+                    Point3="76,-48" />
+                  <mssgle:LineSegment
+                    End="136.5,-48" />
+                </mssgle:SegmentCollection>
+              </mssgle:Curve.Segments>
+            </mssgle:Curve>
+          </EdgeLayout.Curve>
+          <EdgeLayout.Labels>
+            <EdgeLabelCollection />
+          </EdgeLayout.Labels>
+        </EdgeLayout>
+      </GraphLayout>
+    </LayoutInfo>
+  </Package>
+</Objects>]]></DTS:DesignTimeProperties>
+</DTS:Executable>
