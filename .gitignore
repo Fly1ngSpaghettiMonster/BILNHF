@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+*.ipynb_checkpoints/
+.ipynb_checkpoints/
+
+# Visual Studio / SSIS
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+bin/
+obj/
+*.dtproj.user
+
+# PowerBI
+# (keep .pbix files — they are the deliverable)
+
+# OS
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# ETL runtime files
+etl_tracker.txt
+etl_log.txt
+
+# Data files (large CSVs — optional, uncomment if you want to exclude them)
+# data/raw/
+# data/split/
+# data/holidays/
+
+# Temp
+*.tmp
+*.bak
+*.swp
+~$*
