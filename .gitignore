@@ -34,6 +34,8 @@ etl_log.txt
 # data/split/
 # data/holidays/
 
+*.md
+
 # Temp
 *.tmp
 *.bak
