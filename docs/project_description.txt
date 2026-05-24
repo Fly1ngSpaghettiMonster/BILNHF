@@ -1,0 +1,220 @@
+RetailDW - Kiskereskedelmi Ertekesitesi Adattarhaz
+==================================================
+
+Ez egy uzleti intelligencia projekt, amely amerikai kiskereskedelmi ertekesitesi adatokat
+tolt be egy csillagsema alapu SQL Server adattarhazba SSIS ETL pipeline segitsegevel,
+az eredmenyeket Power BI-ban jeleníti meg, es idosor-elorejelzest vegez LSTM es GRU
+neuralis halozatokkal egy Jupyter notebookban.
+
+
+RENDSZERKOVETELMENYEK
+---------------------
+
+A projekt futtatásához az alábbiakra van szükség:
+
+SQL Server (LocalDB vagy Express kiadás) szükséges adatbázismotorként. A projekt a
+(localdb)\MSSQLLocalDB nevű helyi példányhoz csatlakozik. SQL Server Management Studio
+(SSMS) szükséges az SQL szkriptek futtatásához, amelyek ingyenesen letölthetők a
+Microsofttól.
+
+Visual Studio 2019 vagy újabb verzió a SQL Server Integration Services Projects
+bővítménnyel szükséges az SSIS csomagok megnyitásához, szerkesztéséhez és fordításához.
+A lefordított csomag (RetailDW_ETL.ispac) már szerepel a projektben, ezért Visual Studio
+csak akkor szükséges, ha a csomagokat módosítani szeretné.
+
+Power BI Desktop szükséges a riportfájl megnyitásához. Ingyenesen letölthető a
+Microsofttól.
+
+Python 3.x szükséges a Jupyter notebookhoz. A következő csomagokat kell telepíteni:
+pandas, numpy, matplotlib, scikit-learn és tensorflow.
+
+
+PROJEKTSTRUKTÚRA
+----------------
+
+A projekt gyökérkönyvtára a következő fájlokat és mappákat tartalmazza:
+
+A run_ssis.bat egy batch szkript, amely az egész ETL pipeline-t futtatja. Duplán
+kattintva rá, vagy terminálból indítva végrehajtja a Master SSIS csomagot, amely
+betölti az összes adatot és feltölti az adatbázist.
+
+A reset_database.sql egy SQL szkript, amely törli az összes adatot az adatbázisból,
+majd újra feltölti a dátum dimenziót 2014-től 2018-ig terjedő dátumokkal. SSMS-ben
+kell futtatni, ha tiszta lappal szeretnénk kezdeni.
+
+Az etl_log.txt fájlt a run_ssis.bat automatikusan hozza létre és frissíti minden
+futtatáskor. Tartalmazza az egyes futások dátumát, időpontját és eredményét.
+
+A data mappa tartalmazza az összes adatforrást. A raw almappában található a két
+eredeti forrásfájl: a "Sample - Superstore.csv" a fő kiskereskedelmi ertekesitesi
+adathalmaz körülbelül 10 000 sorral, valamint az "US Holiday Dates (2004-2021).csv",
+amely az USA állami ünnepnapjait tartalmazza, és a dátum dimenzió gazdagítására
+szolgál. A split almappában az ertekesitesi adatok négy egyenlő részre osztva
+találhatók, sales_chunk_1.csv-től sales_chunk_4.csv-ig. Ezeket az ETL pipeline
+egymás után tölti be. A split.py egy Python szkript, amellyel ezeket a fájlokat
+az eredeti forrásból létrehoztuk.
+
+Az ssis mappa tartalmazza a Visual Studio megoldást. A megoldásfájl neve
+RetailDW_ETL.slnx, és közvetlenül megnyitható Visual Studióban. A projekten belül hat
+SSIS csomag található: a Master.dtsx az egész pipeline-t koordinálja és sorban meghívja
+az összes többi csomagot; a LoadHolidayDimension.dtsx betölti az ünnepnap-referenciaadatokat;
+a LoadSalesChunk.dtsx egy CSV-fájlt tölt be a staging táblába; a TransformToFact.dtsx
+a staging adatokat áthelyezi a ténytáblába és a dimenziókba; az AggregateMonthly.dtsx
+újraépíti a havi összesítő táblát; az AggregateCategory.dtsx újraépíti a kategória
+összesítő táblát. A bin/Development almappában található a lefordított
+RetailDW_ETL.ispac fájl, amelyet a run_ssis.bat használ.
+
+A reports mappa tartalmazza a RetailDW_reports.pbix Power BI riportfájlt.
+
+A notebooks mappa tartalmazza a sales_forecasting.ipynb Jupyter notebookot.
+
+A docs mappa kiegészítő dokumentumokat tartalmaz, köztük ezt a fájlt és a demóvideó
+szkriptjét.
+
+
+ADATBÁZIS-STRUKTÚRA
+-------------------
+
+Az adatbázis neve RetailDW, és a (localdb)\MSSQLLocalDB SQL Server példányon fut.
+Csillagsémát használ, amelynek középpontjában egy ténytábla áll, amelyhez három
+dimenziótábla, két előre számított összesítő tábla és egy staging tábla kapcsolódik.
+
+A dim_time dimenziótábla 2014. január 1-jétől 2018. december 31-ig minden napra
+tartalmaz egy sort, összesen 2557 sort. Minden sor tárolja a dátumkulcsot (egy egész
+szám yyyyMMdd formátumban), a teljes dátumot, az évet, a hónapot, a hétszámot, a hét
+napját, a nap nevét, a hónap nevét, valamint egy jelzőt, amely mutatja, hogy az adott
+nap ünnepnap-e.
+
+A dim_holiday dimenziótábla 342 sort tartalmaz az USA állami ünnepnapjairól. Minden sor
+tárolja az ünnepnap dátumát, nevét, a hét napját, a hónapot, a napot és az évet.
+
+A dim_category dimenziótábla 17 sort tartalmaz, amelyek az ertekesitesi adatokban
+szereplő egyedi termékkategória és alkategória kombinációkat képviselik.
+
+A fact_sales ténytábla a központi ténytábla 9994 sorral. Minden sor egy értékesítési
+tranzakciót képvisel, és tárolja a rendelésazonosítót, a dátumkulcsot, a kategória
+kulcsot, a vásárlóazonosítót, a vásárlói szegmenst, a várost, az államot, a régiót,
+az ertekesitesi összeget, a mennyiséget, az engedményt, a profitot és egy ünnepnap
+jelzőt.
+
+Az agg_monthly_sales tábla egy előre számított összesítés 573 sorral, amely év,
+hónap, régió és kategória szerint csoportosítja az értékesítéseket, és tartalmazza
+a teljes értékesítést, teljes profitot és rendelésszámot.
+
+Az agg_category_sales tábla egy előre számított összesítés 17 sorral, amely kategória
+és alkategória szerint csoportosítja az értékesítéseket, és tartalmazza a teljes
+értékesítést, teljes profitot, átlagos engedményt és teljes mennyiséget.
+
+A staging_sales tábla egy ideiglenes tárolóterület a nyers CSV-adatok számára az ETL
+folyamat során. Az ETL lefutása után mindig üres.
+
+
+ETL PIPELINE
+------------
+
+Az ETL pipeline hat SSIS csomagból áll, amelyeket a Master.dtsx koordinál.
+
+Az első lépés törli a staging táblát, hogy az előző futás esetleges maradék adatai
+ne zavarják az aktuális futást.
+
+A második lépés betölti az ünnepnap dimenziót. A LoadHolidayDimension.dtsx közvetlenül
+olvassa az "US Holiday Dates (2004-2021).csv" fájlt. A fájl vesszővel tagolt, és
+egyes ünnepnevekben vesszők szerepelnek (például "Martin Luther King, Jr. Day"), amelyeket
+a flat file kapcsolatkezelőben beállított idézőjel szövegelhatároló kezel. A csomag
+minden futáskor truncate-eli és teljesen újratölti a dim_holiday táblát.
+
+A harmadik lépés egy ciklus, amely végigmegy az összes sales_chunk_*.csv fájlon a split
+mappában. Minden fájl esetén a LoadSalesChunk.dtsx beolvassa a fájlt és betölti a
+staging_sales táblába, majd a TransformToFact.dtsx négy SQL műveletet hajt végre: beilleszti
+az új kategória és alkategória kombinációkat a dim_category táblába, frissíti az IsHoliday
+jelzőt a dim_time táblában a dim_holiday táblával való összekapcsolás alapján, beilleszti
+az átalakított sorokat a fact_sales táblába egy WHERE NOT EXISTS ellenőrzéssel a
+duplikátumok megelőzésére, végül pedig truncate-eli a staging táblát.
+
+A negyedik és ötödik lépés újraépíti a két összesítő táblát. Az AggregateMonthly.dtsx
+truncate-eli és újraépíti az agg_monthly_sales táblát a teljes fact_sales tábla alapján.
+Az AggregateCategory.dtsx ugyanezt teszi az agg_category_sales táblával.
+
+Minden csomag idempotens, vagyis a pipeline többször is futtatható duplikált vagy
+inkonzisztens adatok létrehozása nélkül.
+
+
+FUTTATÁS
+--------
+
+1. lépés - Adatbázis előkészítése
+
+Nyissa meg az SSMS-t, és csatlakozzon a (localdb)\MSSQLLocalDB példányhoz. Ha a RetailDW
+adatbázis még nem létezik, hozza létre és futtassa a táblalétrehozó szkripteket. Ha az
+adatbázis már létezik és tiszta lappal szeretne kezdeni, nyissa meg és futtassa a
+reset_database.sql fájlt. Ez törli az összes adatot az összes táblából, és újra feltölti
+a dim_time táblát 2014-től 2018-ig terjedő dátumokkal.
+
+2. lépés - ETL futtatása
+
+Duplán kattintson a run_ssis.bat fájlra a Fájlkezelőben, vagy futtassa terminálból.
+A szkript a dtexec segítségével végrehajtja a Master SSIS csomagot, és az eredményt
+rögzíti az etl_log.txt fájlban. A teljes pipeline néhány másodperc alatt lefut.
+
+3. lépés - Ellenőrzés SSMS-ben
+
+Az ETL lefutása után az alábbi lekérdezésekkel ellenőrizheti az eredményeket:
+
+    USE RetailDW;
+    SELECT COUNT(*) FROM fact_sales;          -- várt eredmény: 9994
+    SELECT COUNT(*) FROM dim_holiday;         -- várt eredmény: 342
+    SELECT COUNT(*) FROM dim_category;        -- várt eredmény: 17
+    SELECT COUNT(*) FROM agg_monthly_sales;   -- várt eredmény: 573
+
+4. lépés - Power BI riport megnyitása
+
+Nyissa meg a reports/RetailDW_reports.pbix fájlt a Power BI Desktopban. A riport
+csatlakozik a RetailDW adatbázishoz és négy oldalt tartalmaz. Az Ertekesitesi Attekintes
+oldal KPI kártyákat mutat a teljes bevételről, profitról és rendelésszámról, valamint
+egy kategória szerinti bontást. Az Unnepnap Elemzes oldal összehasonlítja az ünnepnapokon
+és a többi napon mért értékesítéseket. A Top Termekek oldal alkategóriák szerint rangsorolja
+a termékeket értékesítés és profit alapján. A Havi Trendek oldal egy havi értékesítési
+idősort mutat, amelyen jól látható a szezonális minta.
+
+Megjegyzés: a LocalDB dinamikus named pipe-ot használ a kapcsolathoz. Ha a Power BI nem
+tud csatlakozni az alapértelmezett szerver névvel, futtassa az "sqllocaldb info MSSQLLocalDB"
+parancsot egy terminálban, és használja az ott megjelenő named pipe címet
+np:\\.\pipe\LOCALDB#XXXXXXXX\tsql\query formátumban.
+
+5. lépés - Jupyter notebook futtatása
+
+Navigáljon a notebooks mappába és nyissa meg a sales_forecasting.ipynb fájlt Jupyterben.
+A notebook automatikusan megkeresi és betölti az összes elérhető sales_chunk_*.csv fájlt
+a data/split mappából, ezért működik akkor is, ha csak néhány chunk áll rendelkezésre.
+
+A notebook hét részből áll. Az első rész betölti az adatokat és feltáró elemzést végez,
+beleértve az eloszlás vizualizálását, trendek bemutatását és a hét napja szerinti
+mintázatok vizsgálatát. A második rész ciklikus időbeli jellemzőket von ki szinusz és
+koszinusz transzformációkkal, hogy helyesen kódolja a hét napjának és az év napjának
+periodikus jellegét. A harmadik és negyedik rész StandardScaler segítségével skálázza
+az adatokat, majd időalapú felosztással létrehozza a tanító (2014-2015), validációs
+(2016) és teszt (2017) halmazokat az adatszivárgás megakadályozása érdekében. Az ötödik
+rész LSTM modelleket tanít heti összesített és hétnapos gördülő átlag adatokon. A hatodik
+rész egyenértékű GRU modelleket tanít. A hetedik rész MSE, RMSE és MAE metrikákkal
+összehasonlítja mind a négy modellt és vizualizálja az eredményeket. A legjobb modell
+a gördülő átlag adatokon tanított GRU, amelynek MSE értéke körülbelül 255 785.
+
+
+VISSZAÁLLÍTÁS ES UJRAFUTTATAS
+------------------------------
+
+A teljes pipeline elejéről való demózásához futtassa a reset_database.sql szkriptet
+SSMS-ben, majd futtassa a run_ssis.bat fájlt, végül frissítse a Power BI riportot a
+Kezdőlap menü Frissítés gombjával.
+
+
+ADATFORRÁSOK
+------------
+
+A Superstore Sales adathalmaz a Kaggle platformról származik (vivek468/superstore-dataset-final),
+és körülbelül 10 000 kiskereskedelmi rendelést tartalmaz 2014-től 2018-ig az Egyesült
+Államokból.
+
+Az USA állami ünnepnapok adathalmaza szintén a Kaggle platformról származik
+(donnetew/us-holiday-dates-2004-2021), és 342 szövetségi és állami ünnepnapot tartalmaz
+2004-től 2021-ig.

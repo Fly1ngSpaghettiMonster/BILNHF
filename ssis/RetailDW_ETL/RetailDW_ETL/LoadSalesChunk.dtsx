@@ -11,8 +11,8 @@
   DTS:LocaleID="1033"
   DTS:ObjectName="LoadSalesChunk"
   DTS:PackageType="5"
-  DTS:VersionBuild="11"
-  DTS:VersionGUID="{D69DCFFF-253F-4287-852F-C8A9034C0B42}">
+  DTS:VersionBuild="14"
+  DTS:VersionGUID="{66682E8E-154B-462E-B048-CCE1BB26D6B4}">
   <DTS:Property
     DTS:Name="PackageFormatVersion">8</DTS:Property>
   <DTS:ConnectionManagers>

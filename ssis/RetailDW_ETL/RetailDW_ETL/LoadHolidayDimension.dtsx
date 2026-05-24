@@ -40,13 +40,13 @@
           DTS:HeaderRowDelimiter="_x000D__x000A_"
           DTS:ColumnNamesInFirstDataRow="True"
           DTS:RowDelimiter=""
-          DTS:TextQualifier="_x003C_none_x003E_"
+          DTS:TextQualifier="&quot;"
           DTS:CodePage="65001"
-          DTS:ConnectionString="D:\Egyetem\Msc_3\Uzleti_inteligencia_labor\NHF\data\holidays\us_holidays_clean.csv">
+          DTS:ConnectionString="D:\Egyetem\Msc_3\Uzleti_inteligencia_labor\NHF\data\raw\US Holiday Dates (2004-2021).csv">
           <DTS:FlatFileColumns>
             <DTS:FlatFileColumn
               DTS:ColumnType="Delimited"
-              DTS:ColumnDelimiter="_x007C_"
+              DTS:ColumnDelimiter=","
               DTS:MaximumWidth="50"
               DTS:DataType="130"
               DTS:TextQualified="True"
@@ -55,7 +55,7 @@
               DTS:CreationName="" />
             <DTS:FlatFileColumn
               DTS:ColumnType="Delimited"
-              DTS:ColumnDelimiter="_x007C_"
+              DTS:ColumnDelimiter=","
               DTS:MaximumWidth="50"
               DTS:DataType="130"
               DTS:TextQualified="True"
@@ -64,7 +64,7 @@
               DTS:CreationName="" />
             <DTS:FlatFileColumn
               DTS:ColumnType="Delimited"
-              DTS:ColumnDelimiter="_x007C_"
+              DTS:ColumnDelimiter=","
               DTS:MaximumWidth="20"
               DTS:DataType="130"
               DTS:TextQualified="True"
@@ -73,7 +73,7 @@
               DTS:CreationName="" />
             <DTS:FlatFileColumn
               DTS:ColumnType="Delimited"
-              DTS:ColumnDelimiter="_x007C_"
+              DTS:ColumnDelimiter=","
               DTS:MaximumWidth="50"
               DTS:DataType="130"
               DTS:TextQualified="True"
@@ -82,7 +82,7 @@
               DTS:CreationName="" />
             <DTS:FlatFileColumn
               DTS:ColumnType="Delimited"
-              DTS:ColumnDelimiter="_x007C_"
+              DTS:ColumnDelimiter=","
               DTS:MaximumWidth="50"
               DTS:DataType="130"
               DTS:TextQualified="True"
