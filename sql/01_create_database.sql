@@ -1,4 +1,3 @@
--- Phase 2: Create RetailDW database
 -- Run this in SSMS connected to (localdb)\MSSQLLocalDB
 
 USE master;

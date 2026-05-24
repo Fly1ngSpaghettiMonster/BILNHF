@@ -1,4 +1,3 @@
--- Phase 2: Create all tables for RetailDW
 USE RetailDW;
 GO
 
